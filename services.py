@@ -1,0 +1,45 @@
+import string
+import random
+
+from fastapi import HTTPException, Depends
+
+from crud import LinkRepository, get_link_repository
+from models import Link
+from schemas import LinkCreate, LinkResponse
+
+async def get_link_service(
+    repo: LinkRepository = Depends(get_link_repository)
+) -> "LinkService":
+    return LinkService(repo)
+
+class LinkService:
+    def __init__(self, repo: LinkRepository):
+        self.repo = repo
+
+    async def create_short_link(self, link_data: LinkCreate) -> LinkResponse:
+        while True:
+            short_code = ''.join(
+                random.choices(string.ascii_uppercase + string.digits, k=6))
+            existing = await self.repo.get_link_by_short_code(short_code)
+            if not existing:
+                break
+
+        new_link = await self.repo.create_link(
+            Link(
+                short_code=short_code,
+                original_url=str(link_data.original_url)
+            )
+        )
+
+        return LinkResponse(
+            short_code=new_link.short_code,
+            original_url=new_link.original_url,
+            created_at=new_link.created_at.isoformat()
+        )
+
+    async def get_original_url(self, short_code: str) -> str:
+        link = await self.repo.get_link_by_short_code(short_code)
+        if not link:
+            raise HTTPException(status_code=404, detail="Link not found")
+        
+        return link.original_url
