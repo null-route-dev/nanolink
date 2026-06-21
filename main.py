@@ -5,18 +5,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, HttpUrl
+
 from sqlalchemy import select
 
 from database import init_db, close_db, Link, AsyncSessionLocal
-
-class LinkCreate(BaseModel):
-    original_url: HttpUrl
-
-class LinkResponse(BaseModel):
-    short_code: str
-    original_url: str
-    created_at: str
+from schemas import LinkCreate, LinkResponse
 
 def generate_short_code(length: int = 6) -> str:
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
