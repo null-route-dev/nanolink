@@ -6,7 +6,8 @@ from fastapi.responses import RedirectResponse
 
 from sqlalchemy import select
 
-from database import Link, AsyncSessionLocal
+from database import AsyncSessionLocal
+from models import Link
 from schemas import LinkCreate, LinkResponse
 
 router = APIRouter()
