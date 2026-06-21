@@ -2,11 +2,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from models import Base
-
-DATABASE_URL="sqlite+aiosqlite:///./todos.db"
+from config import settings
 
 engine = create_async_engine(
-    DATABASE_URL,
+    settings.database_url,
     connect_args={"check_same_thread": False}
 )
 

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
+from config import settings
 from database import init_db, close_db
 from routes import router
 
@@ -17,7 +18,12 @@ async def lifespan(app: FastAPI):
     
     await close_db()
 
-app = FastAPI(title="NanoLink", version="0.1.0", lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    debug=settings.debug,
+    lifespan=lifespan
+)
 
 @app.get("/")
 async def root():
@@ -30,4 +36,4 @@ async def ping():
 app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host=settings.host, port=settings.port)
