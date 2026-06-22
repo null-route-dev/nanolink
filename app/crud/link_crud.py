@@ -2,8 +2,8 @@ from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import Link
-from database import get_db
+from models.models import Link
+from core.database import get_db
 
 async def get_link_repository(
     db: AsyncSession = Depends(get_db)
