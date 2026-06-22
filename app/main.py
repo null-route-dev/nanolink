@@ -5,7 +5,8 @@ from fastapi import FastAPI
 
 from core.config import settings
 from core.database import init_db, close_db
-from routes.link_routes import router
+from routes.link_routes import link_router
+from routes.click_log_routes import stats_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,7 +34,8 @@ async def root():
 async def ping():
     return {"status": "ok"}
 
-app.include_router(router)
+app.include_router(link_router)
+app.include_router(stats_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host=settings.host, port=settings.port)
