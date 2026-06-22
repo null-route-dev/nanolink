@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
 
-from app.services.link_service import LinkService, get_link_service
-from app.schemas.link_schemas import LinkCreate, LinkResponse
+from services.link_service import LinkService, get_link_service
+from schemas.link_schemas import LinkCreate, LinkResponse
 
 router = APIRouter()
 

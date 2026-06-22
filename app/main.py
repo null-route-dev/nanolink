@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from core.config import settings
 from core.database import init_db, close_db
-from app.routes.link_routes import router
+from routes.link_routes import router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

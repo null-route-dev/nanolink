@@ -3,9 +3,9 @@ import random
 
 from fastapi import HTTPException, Depends
 
-from app.crud.link_crud import LinkRepository, get_link_repository
+from crud.link_crud import LinkRepository, get_link_repository
 from models.models import Link
-from app.schemas.link_schemas import LinkCreate, LinkResponse
+from schemas.link_schemas import LinkCreate, LinkResponse
 
 async def get_link_service(
     repo: LinkRepository = Depends(get_link_repository)
