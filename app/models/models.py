@@ -1,27 +1,30 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 class Link(Base):
-    __tablename__ = 'links'
-    
-    id = Column(Integer, primary_key=True)
-    short_code = Column(String(20), nullable=False, unique=True)
-    original_url = Column(Text(), nullable=False)
-    created_at = Column(DateTime, default=func.now())
+    __tablename__ = "links"
 
-    click_logs = relationship("ClickLog", back_populates="link", cascade="all, delete-orphan")
+    id: Mapped[int] = mapped_column(primary_key=True)
+    short_code: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
+    original_url: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now())
+
+    click_logs: Mapped[list["ClickLog"]] = relationship(
+        back_populates="link", cascade="all, delete-orphan"
+    )
 
 class ClickLog(Base):
     __tablename__ = "clicks_log"
-    
-    id = Column(Integer, primary_key=True)
-    link_id = Column(Integer, ForeignKey("links.id", ondelete="CASCADE"), nullable=False)
-    clicked_at = Column(DateTime, default=func.now(), nullable=False)
-    ip_address = Column(String(45), nullable=True)
-    user_agent = Column(Text, nullable=True)
-    
-    link = relationship("Link", back_populates="click_logs")
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    link_id: Mapped[int] = mapped_column(
+        ForeignKey("links.id", ondelete="CASCADE"), nullable=False
+    )
+    clicked_at: Mapped[DateTime] = mapped_column(DateTime, default=func.now(), nullable=False)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    link: Mapped["Link"] = relationship(back_populates="click_logs")
