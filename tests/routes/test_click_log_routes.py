@@ -5,7 +5,9 @@ from fastapi import HTTPException
 
 from main import app
 from services.click_log_service import get_click_log_service
+from core.security import get_current_user
 from schemas.click_log_schemas import ClickLogStats
+from schemas.user_schemas import UserResponse
 
 @pytest.fixture
 def mock_click_log_service():
@@ -14,8 +16,19 @@ def mock_click_log_service():
     return mock
 
 @pytest.fixture
-def client(mock_click_log_service):
+def mock_current_user():
+    return UserResponse(
+        id=1,
+        username="testuser",
+        email="test@example.com",
+        created_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:00"
+    )
+
+@pytest.fixture
+def client(mock_click_log_service, mock_current_user):
     app.dependency_overrides[get_click_log_service] = lambda: mock_click_log_service
+    app.dependency_overrides[get_current_user] = lambda: mock_current_user
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -24,7 +37,7 @@ def test_get_link_stats_success(client, mock_click_log_service):
     expected_response = {
         "short_code": "ABC123",
         "original_url": "https://example.com",
-        "created_at": "2024-01-01T12:00:00",
+        "created_at": "2026-01-01T12:00:00",
         "total_clicks": 42
     }
 
@@ -34,7 +47,7 @@ def test_get_link_stats_success(client, mock_click_log_service):
 
     assert response.status_code == 200
     assert response.json() == expected_response
-    mock_click_log_service.get_log_stats.assert_called_once_with(short_code)
+    mock_click_log_service.get_log_stats.assert_called_once_with(short_code, 1)
 
 def test_get_link_stats_not_found(client, mock_click_log_service):
     short_code = "NONEXIST"
@@ -46,7 +59,7 @@ def test_get_link_stats_not_found(client, mock_click_log_service):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Link not found"
-    mock_click_log_service.get_log_stats.assert_called_once_with(short_code)
+    mock_click_log_service.get_log_stats.assert_called_once_with(short_code, 1)
 
 def test_get_link_stats_service_error(client, mock_click_log_service):
     short_code = "ABC123"
