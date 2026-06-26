@@ -33,7 +33,8 @@ def test_create_link_success(client, mock_link_service):
     expected_response = {
         "short_code": "ABC123",
         "original_url": "https://example.com/",
-        "created_at": "2024-01-01T12:00:00"
+        "created_at": "2026-01-01T12:00:00",
+        "owner_id": 1
     }
 
     mock_link_service.create_short_link.return_value = LinkResponse(**expected_response)
