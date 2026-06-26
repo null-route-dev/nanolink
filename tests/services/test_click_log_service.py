@@ -23,6 +23,7 @@ async def test_get_log_stats_success(
     mock_click_log_repository: AsyncMock
 ) -> None:
     short_code = "ABC123"
+    user_id = 1
     created_at = datetime(2026, 6, 23, 17, 0, 0)
     
     stats_data = {
@@ -34,9 +35,9 @@ async def test_get_log_stats_success(
     
     mock_click_log_repository.get_click_log_stats_by_short_code.return_value = stats_data
     
-    result = await click_log_service.get_log_stats(short_code)
+    result = await click_log_service.get_log_stats(short_code, user_id)
     
-    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code)
+    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code, user_id)
     
     assert hasattr(result, "short_code")
     assert hasattr(result, "original_url")
@@ -53,22 +54,16 @@ async def test_get_log_stats_link_not_found(
     mock_click_log_repository: AsyncMock
 ) -> None:
     short_code = "NONEXIST"
+    user_id = 1
     
-    stats_data = {
-        "short_code": None,
-        "original_url": None,
-        "created_at": None,
-        "total_clicks": 0
-    }
-    
-    mock_click_log_repository.get_click_log_stats_by_short_code.return_value = stats_data
+    mock_click_log_repository.get_click_log_stats_by_short_code.return_value = None
     
     with pytest.raises(HTTPException) as exc_info:
-        await click_log_service.get_log_stats(short_code)
+        await click_log_service.get_log_stats(short_code, user_id)
     
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Link not found"
-    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code)
+    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code, user_id)
 
 @pytest.mark.asyncio
 async def test_get_log_stats_repository_error(
@@ -76,14 +71,15 @@ async def test_get_log_stats_repository_error(
     mock_click_log_repository: AsyncMock
 ) -> None:
     short_code = "ABC123"
+    user_id = 1
     
     mock_click_log_repository.get_click_log_stats_by_short_code.side_effect = Exception("Database error")
     
     with pytest.raises(Exception) as exc_info:
-        await click_log_service.get_log_stats(short_code)
+        await click_log_service.get_log_stats(short_code, user_id)
     
     assert "Database error" in str(exc_info.value)
-    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code)
+    mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code, user_id)
 
 @pytest.mark.asyncio
 async def test_create_click_log_success(
