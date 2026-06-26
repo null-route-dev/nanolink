@@ -23,11 +23,11 @@ async def test_create_click_log_by_short_code_success(
     short_code = "abc123"
     ip_address = "192.168.1.1"
     user_agent = "Mozilla/5.0"
-    
+
     mock_result = MagicMock()
     mock_result.inserted_primary_key = [1]
     mock_db_session.execute.return_value = mock_result
-    
+
     result = await click_log_repository.create_click_log_by_short_code(
         short_code, ip_address, user_agent
     )
@@ -45,17 +45,17 @@ async def test_create_click_log_by_short_code_commit_error(
     short_code = "abc123"
     ip_address = "192.168.1.1"
     user_agent = "Mozilla/5.0"
-    
+
     mock_result = MagicMock()
     mock_db_session.execute.return_value = mock_result
-    
+
     mock_db_session.commit.side_effect = Exception("Database connection lost")
-    
+
     with pytest.raises(Exception) as exc_info:
         await click_log_repository.create_click_log_by_short_code(
             short_code, ip_address, user_agent
         )
-    
+
     assert "Database connection lost" in str(exc_info.value)
     mock_db_session.execute.assert_awaited_once()
     mock_db_session.commit.assert_awaited_once()
@@ -66,23 +66,24 @@ async def test_get_click_log_stats_by_short_code_found(
     mock_db_session: AsyncMock
 ) -> None:
     short_code = "abc123"
-    
+    user_id = 1
+
     expected_data = {
         "short_code": "abc123",
         "original_url": "https://example.com",
         "created_at": "2024-01-01 12:00:00",
         "total_clicks": 42
     }
-    
+
     mock_mapping = MagicMock()
     mock_mapping.first.return_value = expected_data
     
     mock_result = MagicMock()
     mock_result.mappings.return_value = mock_mapping
     mock_db_session.execute.return_value = mock_result
-    
-    result = await click_log_repository.get_click_log_stats_by_short_code(short_code)
-    
+
+    result = await click_log_repository.get_click_log_stats_by_short_code(short_code, user_id)
+
     mock_db_session.execute.assert_awaited_once()
     assert result == expected_data
     assert result["short_code"] == "abc123"
@@ -94,16 +95,17 @@ async def test_get_click_log_stats_by_short_code_not_found(
     mock_db_session: AsyncMock
 ) -> None:
     short_code = "nonexistent"
-    
+    user_id = 1
+
     mock_mapping = MagicMock()
     mock_mapping.first.return_value = None
     
     mock_result = MagicMock()
     mock_result.mappings.return_value = mock_mapping
     mock_db_session.execute.return_value = mock_result
-    
-    result = await click_log_repository.get_click_log_stats_by_short_code(short_code)
-    
+
+    result = await click_log_repository.get_click_log_stats_by_short_code(short_code, user_id)
+
     mock_db_session.execute.assert_awaited_once()
     assert result is None
 
@@ -113,23 +115,24 @@ async def test_get_click_log_stats_by_short_code_zero_clicks(
     mock_db_session: AsyncMock
 ) -> None:
     short_code = "abc123"
-    
+    user_id = 1
+
     expected_data = {
         "short_code": "abc123",
         "original_url": "https://example.com",
         "created_at": "2024-01-01 12:00:00",
         "total_clicks": 0
     }
-    
+
     mock_mapping = MagicMock()
     mock_mapping.first.return_value = expected_data
-    
+
     mock_result = MagicMock()
     mock_result.mappings.return_value = mock_mapping
     mock_db_session.execute.return_value = mock_result
-    
-    result = await click_log_repository.get_click_log_stats_by_short_code(short_code)
-    
+
+    result = await click_log_repository.get_click_log_stats_by_short_code(short_code, user_id)
+
     mock_db_session.execute.assert_awaited_once()
     assert result == expected_data
     assert result["total_clicks"] == 0
