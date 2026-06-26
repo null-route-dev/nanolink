@@ -14,3 +14,7 @@ class UserResponse(BaseModel):
     email: str
     created_at: str
     updated_at: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"

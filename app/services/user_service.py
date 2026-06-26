@@ -3,7 +3,8 @@ import bcrypt
 
 from crud.user_crud import UserRepository, get_user_repository
 from models.models import User
-from schemas.user_schemas import CreateUser, LoginUser, UserResponse
+from schemas.user_schemas import CreateUser, LoginUser, UserResponse, Token
+from core.jwt_utils import create_access_token
 
 async def get_user_service(
     repo: UserRepository = Depends(get_user_repository)
@@ -41,18 +42,14 @@ class UserService:
             updated_at=created.updated_at.isoformat() if created.updated_at else None
         )
 
-    async def authenticate_user(self, login_data: LoginUser) -> UserResponse:
+    async def authenticate_user(self, login_data: LoginUser) -> Token:
         user = await self.repo.get_user_by_email(login_data.email)
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
         if not self._verify_password(login_data.password, user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
-        return UserResponse(
-            username=user.username,
-            email=user.email,
-            created_at=user.created_at.isoformat() if user.created_at else None,
-            updated_at=user.updated_at.isoformat() if user.updated_at else None
-        )
+        access_token = create_access_token(data={"sub": user.email})
+        return Token(access_token=access_token)
 
     async def get_user_by_email(self, email: str) -> UserResponse | None:
         user = await self.repo.get_user_by_email(email)

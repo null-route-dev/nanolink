@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     debug: bool
     host: str
     port: int
+    jwt_secret_key: str
+    jwt_algorithm: str
+    jwt_access_token_expire_minutes: int
     
     model_config = ConfigDict(
         env_file=BASE_DIR / ".env",
