@@ -10,6 +10,7 @@ class LoginUser(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
+    id: int
     username: str
     email: str
     created_at: str

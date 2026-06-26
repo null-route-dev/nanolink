@@ -25,17 +25,20 @@ class ClickLogRepository:
         await self.db.commit()
         return result
     
-    async def get_click_log_stats_by_short_code(self, short_code: str):
+    async def get_click_log_stats_by_short_code(self, short_code: str, user_id: int):
         stmt = (
             select(
                 Link.short_code,
                 Link.original_url,
                 Link.created_at,
+                Link.user_id,
                 func.count(ClickLog.id).label("total_clicks")
             )
             .select_from(Link)
             .outerjoin(ClickLog, Link.id == ClickLog.link_id)
             .where(Link.short_code == short_code)
+            .where(Link.user_id == user_id)
+            .group_by(Link.id)
         )
         result = await self.db.execute(stmt)
         return result.mappings().first()

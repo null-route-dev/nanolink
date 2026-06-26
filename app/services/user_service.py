@@ -36,6 +36,7 @@ class UserService:
         )
         created = await self.repo.create_user(new_user)
         return UserResponse(
+            id=created.id,
             username=created.username,
             email=created.email,
             created_at=created.created_at.isoformat() if created.created_at else None,
@@ -56,6 +57,7 @@ class UserService:
         if not user:
             return None
         return UserResponse(
+            id=user.id,
             username=user.username,
             email=user.email,
             created_at=user.created_at.isoformat() if user.created_at else None,

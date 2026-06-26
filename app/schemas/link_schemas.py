@@ -7,3 +7,4 @@ class LinkResponse(BaseModel):
     short_code: str
     original_url: str
     created_at: str
+    owner_id: int | None

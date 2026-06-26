@@ -12,10 +12,10 @@ class ClickLogService:
     def __init__(self, repo: ClickLogRepository):
         self.repo = repo
     
-    async def get_log_stats(self, short_code: str) -> ClickLogStats:
-        stats = await self.repo.get_click_log_stats_by_short_code(short_code)
+    async def get_log_stats(self, short_code: str, user_id: int) -> ClickLogStats:
+        stats = await self.repo.get_click_log_stats_by_short_code(short_code, user_id)
 
-        if stats['short_code'] is None:
+        if stats is None:
             raise HTTPException(status_code=404, detail="Link not found")
     
         return ClickLogStats(

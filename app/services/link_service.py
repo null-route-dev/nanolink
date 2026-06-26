@@ -16,7 +16,7 @@ class LinkService:
     def __init__(self, repo: LinkRepository):
         self.repo = repo
 
-    async def create_short_link(self, link_data: LinkCreate) -> LinkResponse:
+    async def create_short_link(self, link_data: LinkCreate, user_id: int | None) -> LinkResponse:
         while True:
             short_code = ''.join(
                 random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -27,14 +27,16 @@ class LinkService:
         new_link = await self.repo.create_link(
             Link(
                 short_code=short_code,
-                original_url=str(link_data.original_url)
+                original_url=str(link_data.original_url),
+                user_id=user_id
             )
         )
 
         return LinkResponse(
             short_code=new_link.short_code,
             original_url=new_link.original_url,
-            created_at=new_link.created_at.isoformat()
+            created_at=new_link.created_at.isoformat(),
+            owner_id=user_id
         )
 
     async def get_original_url(self, short_code: str) -> str:
