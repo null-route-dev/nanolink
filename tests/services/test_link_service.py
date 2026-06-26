@@ -25,6 +25,7 @@ async def test_create_short_link_success(
 ) -> None:
     original_url = "https://example.com/very/long/url"
     link_data = LinkCreate(original_url=original_url)
+    user_id = 1
     
     mock_link_repository.get_link_by_short_code.return_value = None
     
@@ -33,11 +34,11 @@ async def test_create_short_link_success(
         original_url=original_url,
         created_at=MagicMock()
     )
-    created_link.created_at.isoformat.return_value = "2024-01-01T12:00:00"
+    created_link.created_at.isoformat.return_value = "2026-01-01T12:00:00"
     
     mock_link_repository.create_link.return_value = created_link
     
-    result = await link_service.create_short_link(link_data)
+    result = await link_service.create_short_link(link_data, user_id)
     
     mock_link_repository.get_link_by_short_code.assert_called_once()
     mock_link_repository.create_link.assert_called_once()
@@ -47,7 +48,8 @@ async def test_create_short_link_success(
     assert hasattr(result, "created_at")
     assert result.short_code == "ABC123"
     assert result.original_url == original_url
-    assert result.created_at == "2024-01-01T12:00:00"
+    assert result.created_at == "2026-01-01T12:00:00"
+    assert mock_link_repository.create_link.call_args[0][0].user_id == user_id
 
 @pytest.mark.asyncio
 async def test_create_short_link_with_collision(
@@ -56,6 +58,7 @@ async def test_create_short_link_with_collision(
 ) -> None:
     original_url = "https://example.com/test"
     link_data = LinkCreate(original_url=original_url)
+    user_id = 1
     
     existing_link = Link(short_code="ABC123", original_url="https://example.com/other")
     
@@ -69,11 +72,11 @@ async def test_create_short_link_with_collision(
         original_url=original_url,
         created_at=MagicMock()
     )
-    created_link.created_at.isoformat.return_value = "2024-01-01T12:00:00"
+    created_link.created_at.isoformat.return_value = "2026-01-01T12:00:00"
     
     mock_link_repository.create_link.return_value = created_link
     
-    result = await link_service.create_short_link(link_data)
+    result = await link_service.create_short_link(link_data, user_id)
     
     assert mock_link_repository.get_link_by_short_code.call_count == 2
     mock_link_repository.create_link.assert_called_once()
@@ -86,12 +89,13 @@ async def test_create_short_link_repository_error(
 ) -> None:
     original_url = "https://example.com/test"
     link_data = LinkCreate(original_url=original_url)
+    user_id = 1
     
     mock_link_repository.get_link_by_short_code.return_value = None
     mock_link_repository.create_link.side_effect = Exception("Database error")
     
     with pytest.raises(Exception) as exc_info:
-        await link_service.create_short_link(link_data)
+        await link_service.create_short_link(link_data, user_id)
     
     assert "Database error" in str(exc_info.value)
     mock_link_repository.get_link_by_short_code.assert_called_once()
@@ -149,6 +153,7 @@ async def test_create_short_link_with_special_characters_in_url(
 ) -> None:
     original_url = "https://example.com/path?param=value&foo=bar#anchor"
     link_data = LinkCreate(original_url=original_url)
+    user_id = 1
     
     mock_link_repository.get_link_by_short_code.return_value = None
     
@@ -157,11 +162,11 @@ async def test_create_short_link_with_special_characters_in_url(
         original_url=original_url,
         created_at=MagicMock()
     )
-    created_link.created_at.isoformat.return_value = "2024-01-01T12:00:00"
+    created_link.created_at.isoformat.return_value = "2026-01-01T12:00:00"
     
     mock_link_repository.create_link.return_value = created_link
     
-    result = await link_service.create_short_link(link_data)
+    result = await link_service.create_short_link(link_data, user_id)
     
     assert result.original_url == original_url
     mock_link_repository.create_link.assert_called_once()
@@ -173,6 +178,7 @@ async def test_create_short_link_with_multiple_collisions(
 ) -> None:
     original_url = "https://example.com/test"
     link_data = LinkCreate(original_url=original_url)
+    user_id = 1
     
     existing_links = [
         Link(short_code=f"ABC{i}", original_url="https://example.com/other")
@@ -187,11 +193,11 @@ async def test_create_short_link_with_multiple_collisions(
         original_url=original_url,
         created_at=MagicMock()
     )
-    created_link.created_at.isoformat.return_value = "2024-01-01T12:00:00"
+    created_link.created_at.isoformat.return_value = "2026-01-01T12:00:00"
     
     mock_link_repository.create_link.return_value = created_link
     
-    result = await link_service.create_short_link(link_data)
+    result = await link_service.create_short_link(link_data, user_id)
     
     assert mock_link_repository.get_link_by_short_code.call_count == 4
     assert result.short_code == "XYZ789"
