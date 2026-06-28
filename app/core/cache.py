@@ -1,50 +1,81 @@
 import json
 from typing import Optional, Any
+
 import redis.asyncio as redis
+from redis.exceptions import ConnectionError, TimeoutError
+
 from core.config import settings
 
 redis_client = None
 
-async def get_redis_client() -> redis.Redis:
+async def get_redis_client() -> Optional[redis.Redis]:
     global redis_client
-    if redis_client is None:
-        redis_client = redis.from_url(settings.redis_url, decode_responses=True)
+    if redis_client is not None:
+        return redis_client
+    try:
+        redis_client = redis.from_url(
+            settings.redis_url,
+            decode_responses=True,
+            socket_connect_timeout=settings.redis_connect_timeout,
+            socket_timeout=settings.redis_read_timeout
+        )
+        await redis_client.ping()
+    except (ConnectionError, TimeoutError, Exception):
+        redis_client = None
     return redis_client
 
 class CacheService:
-    def __init__(self):
-        self.client = None
-
-    async def _get_client(self) -> redis.Redis:
-        if self.client is None:
-            self.client = await get_redis_client()
-        return self.client
+    async def _get_client(self) -> Optional[redis.Redis]:
+        return await get_redis_client()
 
     async def get(self, key: str) -> Optional[Any]:
         client = await self._get_client()
-        data = await client.get(key)
-        if data:
-            return json.loads(data)
-        return None
+        if client is None:
+            return None
+        try:
+            data = await client.get(key)
+            return json.loads(data) if data else None
+        except Exception:
+            return None
 
     async def set(self, key: str, value: Any, expire: int = None) -> None:
         client = await self._get_client()
-        if expire is None:
-            expire = settings.redis_cache_expire_seconds
-        await client.set(key, json.dumps(value), ex=expire)
+        if client is None:
+            return
+        try:
+            if expire is None:
+                expire = settings.redis_cache_expire_seconds
+            await client.set(key, json.dumps(value), ex=expire)
+        except Exception:
+            pass
 
     async def delete(self, key: str) -> None:
         client = await self._get_client()
-        await client.delete(key)
+        if client is None:
+            return
+        try:
+            await client.delete(key)
+        except Exception:
+            pass
 
     async def delete_pattern(self, pattern: str) -> None:
         client = await self._get_client()
-        keys = await client.keys(pattern)
-        if keys:
-            await client.delete(*keys)
+        if client is None:
+            return
+        try:
+            keys = await client.keys(pattern)
+            if keys:
+                await client.delete(*keys)
+        except Exception:
+            pass
 
     async def exists(self, key: str) -> bool:
         client = await self._get_client()
-        return await client.exists(key)
+        if client is None:
+            return False
+        try:
+            return await client.exists(key) > 0
+        except Exception:
+            return False
 
 cache_service = CacheService()

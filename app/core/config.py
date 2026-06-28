@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int
     redis_url: str
     redis_cache_expire_seconds: int
+    redis_connect_timeout: float
+    redis_read_timeout: float
     
     model_config = ConfigDict(
         env_file=BASE_DIR / ".env",
