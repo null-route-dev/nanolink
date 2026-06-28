@@ -6,6 +6,7 @@ from fastapi import HTTPException, Depends
 from crud.link_crud import LinkRepository, get_link_repository
 from models.models import Link
 from schemas.link_schemas import LinkCreate, LinkResponse
+from core.cache import cache_service
 
 async def get_link_service(
     repo: LinkRepository = Depends(get_link_repository)
@@ -40,8 +41,15 @@ class LinkService:
         )
 
     async def get_original_url(self, short_code: str) -> str:
+        cache_key = f"link:original:{short_code}"
+        cached_url = await cache_service.get(cache_key)
+        if cached_url:
+            return cached_url
+
         link = await self.repo.get_link_by_short_code(short_code)
         if not link:
             raise HTTPException(status_code=404, detail="Link not found")
+        
+        await cache_service.set(cache_key, link.original_url)
         
         return link.original_url
