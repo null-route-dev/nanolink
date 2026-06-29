@@ -11,7 +11,7 @@ Under active development
 - Python 3.12+
 - FastAPI
 - PostgreSQL (planned)
-- Redis (planned)
+- Redis
 - SQLAlchemy (async)
 - Pytest
 - JWT Authentication
@@ -29,13 +29,14 @@ Under active development
 - Protected endpoints with token validation
 - Async database operations
 - Comprehensive test coverage (40+ tests)
+- Redis caching
+- User link management (list, update, delete)
 
 ### Planned
 - User profile management
 - Custom short codes (user-defined aliases)
 - Advanced statistics (daily, devices, locations)
 - Link expiration dates
-- Redis caching
 - Docker containerization
 
 ## API Endpoints
@@ -53,8 +54,11 @@ Under active development
 ### Protected (JWT required)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/stats/{short_code}` | Get click statistics for your link |
 | POST | `/links/` | Create link with user ownership |
+| GET | `/links/my` | Get all links for current user |
+| PUT | `/links/{short_code}` | Update your link URL |
+| DELETE | `/links/{short_code}` | Delete your link |
+| GET | `/stats/{short_code}` | Get click statistics for your link |
 
 ## Authentication
 

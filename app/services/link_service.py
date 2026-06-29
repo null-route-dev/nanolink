@@ -40,9 +40,43 @@ class LinkService:
             owner_id=user_id
         )
 
+    async def get_user_links(self, user_id: int) -> list[LinkResponse]:
+        links = await self.repo.get_links_by_user_id(user_id)
+        return [
+            LinkResponse(
+                short_code=link.short_code,
+                original_url=link.original_url,
+                created_at=link.created_at.isoformat(),
+                owner_id=link.user_id
+            )
+            for link in links
+        ]
+    
+    async def update_link(self, short_code: str, new_url: str, user_id: int) -> LinkResponse:
+        updated = await self.repo.update_link_url(short_code, new_url, user_id)
+        if updated is None:
+            raise HTTPException(status_code=404, detail="Link not found or not owned by user")
+        
+        await cache_service.delete(f"link:original:{short_code}")
+
+        return LinkResponse(
+            short_code=updated.short_code,
+            original_url=updated.original_url,
+            created_at=updated.created_at.isoformat(),
+            owner_id=updated.user_id
+        )
+
+    async def delete_link(self, short_code: str, user_id: int) -> None:
+        deleted = await self.repo.delete_link(short_code, user_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Link not found or not owned by user")
+        
+        await cache_service.delete(f"link:original:{short_code}")
+
     async def get_original_url(self, short_code: str) -> str:
         cache_key = f"link:original:{short_code}"
         cached_url = await cache_service.get(cache_key)
+
         if cached_url:
             return cached_url
 
