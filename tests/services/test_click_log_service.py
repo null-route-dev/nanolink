@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from datetime import datetime
 from fastapi import HTTPException
 
@@ -35,14 +35,12 @@ async def test_get_log_stats_success(
     
     mock_click_log_repository.get_click_log_stats_by_short_code.return_value = stats_data
     
-    result = await click_log_service.get_log_stats(short_code, user_id)
+    with patch("app.services.click_log_service.cache_service.get", AsyncMock(return_value=None)):
+        with patch("app.services.click_log_service.cache_service.set", AsyncMock()):
+            result = await click_log_service.get_log_stats(short_code, user_id)
     
     mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code, user_id)
     
-    assert hasattr(result, "short_code")
-    assert hasattr(result, "original_url")
-    assert hasattr(result, "created_at")
-    assert hasattr(result, "total_clicks")
     assert result.short_code == "ABC123"
     assert result.original_url == "https://example.com"
     assert result.created_at == "2026-06-23 17:00:00"
@@ -58,8 +56,9 @@ async def test_get_log_stats_link_not_found(
     
     mock_click_log_repository.get_click_log_stats_by_short_code.return_value = None
     
-    with pytest.raises(HTTPException) as exc_info:
-        await click_log_service.get_log_stats(short_code, user_id)
+    with patch("app.services.click_log_service.cache_service.get", AsyncMock(return_value=None)):
+        with pytest.raises(HTTPException) as exc_info:
+            await click_log_service.get_log_stats(short_code, user_id)
     
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Link not found"
@@ -75,8 +74,9 @@ async def test_get_log_stats_repository_error(
     
     mock_click_log_repository.get_click_log_stats_by_short_code.side_effect = Exception("Database error")
     
-    with pytest.raises(Exception) as exc_info:
-        await click_log_service.get_log_stats(short_code, user_id)
+    with patch("app.services.click_log_service.cache_service.get", AsyncMock(return_value=None)):
+        with pytest.raises(Exception) as exc_info:
+            await click_log_service.get_log_stats(short_code, user_id)
     
     assert "Database error" in str(exc_info.value)
     mock_click_log_repository.get_click_log_stats_by_short_code.assert_called_once_with(short_code, user_id)
@@ -92,7 +92,8 @@ async def test_create_click_log_success(
     
     mock_click_log_repository.create_click_log_by_short_code.return_value = None
     
-    result = await click_log_service.create_click_log(short_code, ip, user_agent)
+    with patch("app.services.click_log_service.cache_service.delete_pattern", AsyncMock()):
+        result = await click_log_service.create_click_log(short_code, ip, user_agent)
     
     mock_click_log_repository.create_click_log_by_short_code.assert_called_once_with(
         short_code, ip, user_agent
@@ -110,8 +111,9 @@ async def test_create_click_log_repository_error(
     
     mock_click_log_repository.create_click_log_by_short_code.side_effect = Exception("Database error")
     
-    with pytest.raises(Exception) as exc_info:
-        await click_log_service.create_click_log(short_code, ip, user_agent)
+    with patch("app.services.click_log_service.cache_service.delete_pattern", AsyncMock()):
+        with pytest.raises(Exception) as exc_info:
+            await click_log_service.create_click_log(short_code, ip, user_agent)
     
     assert "Database error" in str(exc_info.value)
     mock_click_log_repository.create_click_log_by_short_code.assert_called_once_with(

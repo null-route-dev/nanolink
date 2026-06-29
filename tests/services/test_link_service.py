@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException
 
 from app.services.link_service import LinkService
@@ -43,9 +43,6 @@ async def test_create_short_link_success(
     mock_link_repository.get_link_by_short_code.assert_called_once()
     mock_link_repository.create_link.assert_called_once()
     
-    assert hasattr(result, "short_code")
-    assert hasattr(result, "original_url")
-    assert hasattr(result, "created_at")
     assert result.short_code == "ABC123"
     assert result.original_url == original_url
     assert result.created_at == "2026-01-01T12:00:00"
@@ -112,7 +109,9 @@ async def test_get_original_url_success(
     link = Link(short_code=short_code, original_url=expected_url)
     mock_link_repository.get_link_by_short_code.return_value = link
     
-    result = await link_service.get_original_url(short_code)
+    with patch("app.services.link_service.cache_service.get", AsyncMock(return_value=None)):
+        with patch("app.services.link_service.cache_service.set", AsyncMock()):
+            result = await link_service.get_original_url(short_code)
     
     mock_link_repository.get_link_by_short_code.assert_called_once_with(short_code)
     assert result == expected_url
@@ -125,8 +124,9 @@ async def test_get_original_url_not_found(
     short_code = "NONEXIST"
     mock_link_repository.get_link_by_short_code.return_value = None
     
-    with pytest.raises(HTTPException) as exc_info:
-        await link_service.get_original_url(short_code)
+    with patch("app.services.link_service.cache_service.get", AsyncMock(return_value=None)):
+        with pytest.raises(HTTPException) as exc_info:
+            await link_service.get_original_url(short_code)
     
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Link not found"
@@ -140,8 +140,9 @@ async def test_get_original_url_repository_error(
     short_code = "ABC123"
     mock_link_repository.get_link_by_short_code.side_effect = Exception("Connection error")
     
-    with pytest.raises(Exception) as exc_info:
-        await link_service.get_original_url(short_code)
+    with patch("app.services.link_service.cache_service.get", AsyncMock(return_value=None)):
+        with pytest.raises(Exception) as exc_info:
+            await link_service.get_original_url(short_code)
     
     assert "Connection error" in str(exc_info.value)
     mock_link_repository.get_link_by_short_code.assert_called_once_with(short_code)
@@ -209,10 +210,11 @@ async def test_get_original_url_with_unicode_characters(
 ) -> None:
     short_code = "ABC123"
     expected_url = "https://example.com/hello_world"
-    
+
     link = Link(short_code=short_code, original_url=expected_url)
     mock_link_repository.get_link_by_short_code.return_value = link
-    
-    result = await link_service.get_original_url(short_code)
-    
+
+    with patch("app.services.link_service.cache_service.get", AsyncMock(return_value=None)):
+        result = await link_service.get_original_url(short_code)
+
     assert result == expected_url
