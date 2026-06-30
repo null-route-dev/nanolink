@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import HTTPException
 import bcrypt
 
@@ -176,3 +176,94 @@ async def test_get_user_by_email_not_found(
 
     mock_user_repository.get_user_by_email.assert_called_once_with("notfound@example.com")
     assert result is None
+
+@pytest.mark.asyncio
+async def test_change_password_success(
+    user_service: UserService,
+    mock_user_repository: AsyncMock
+) -> None:
+    user_id = 1
+    old_password = "oldpass123"
+    new_password = "newpass456"
+
+    user = User(id=user_id, password_hash="hashed_old")
+    mock_user_repository.get_user_by_id.return_value = user
+
+    with patch.object(user_service, "_verify_password") as mock_verify:
+        mock_verify.return_value = True
+        with patch.object(user_service, "_hash_password") as mock_hash:
+            mock_hash.return_value = "hashed_new"
+            await user_service.change_password(user_id, old_password, new_password)
+
+    mock_user_repository.get_user_by_id.assert_called_once_with(user_id)
+    mock_verify.assert_called_once_with(old_password, "hashed_old")
+    mock_hash.assert_called_once_with(new_password)
+    mock_user_repository.update_password.assert_called_once_with(user_id, "hashed_new")
+
+@pytest.mark.asyncio
+async def test_change_password_user_not_found(
+    user_service: UserService,
+    mock_user_repository: AsyncMock
+) -> None:
+    user_id = 999
+    old_password = "oldpass123"
+    new_password = "newpass456"
+
+    mock_user_repository.get_user_by_id.return_value = None
+
+    with pytest.raises(HTTPException) as exc_info:
+        await user_service.change_password(user_id, old_password, new_password)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "User not found"
+    mock_user_repository.get_user_by_id.assert_called_once_with(user_id)
+    mock_user_repository.update_password.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_change_password_invalid_old_password(
+    user_service: UserService,
+    mock_user_repository: AsyncMock
+) -> None:
+    user_id = 1
+    old_password = "wrongpass"
+    new_password = "newpass456"
+
+    user = User(id=user_id, password_hash="hashed_old")
+    mock_user_repository.get_user_by_id.return_value = user
+
+    with patch.object(user_service, "_verify_password") as mock_verify:
+        mock_verify.return_value = False
+        with pytest.raises(HTTPException) as exc_info:
+            await user_service.change_password(user_id, old_password, new_password)
+
+    assert exc_info.value.status_code == 401
+    assert exc_info.value.detail == "Invalid old password"
+    mock_user_repository.get_user_by_id.assert_called_once_with(user_id)
+    mock_verify.assert_called_once_with(old_password, "hashed_old")
+    mock_user_repository.update_password.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_change_password_repository_error(
+    user_service: UserService,
+    mock_user_repository: AsyncMock
+) -> None:
+    user_id = 1
+    old_password = "oldpass123"
+    new_password = "newpass456"
+
+    user = User(id=user_id, password_hash="hashed_old")
+    mock_user_repository.get_user_by_id.return_value = user
+    mock_user_repository.update_password.side_effect = Exception("Database error")
+
+    with patch.object(user_service, "_verify_password") as mock_verify:
+        mock_verify.return_value = True
+        with patch.object(user_service, "_hash_password") as mock_hash:
+            mock_hash.return_value = "hashed_new"
+            with pytest.raises(Exception) as exc_info:
+                await user_service.change_password(user_id, old_password, new_password)
+
+    assert "Database error" in str(exc_info.value)
+    mock_user_repository.get_user_by_id.assert_called_once_with(user_id)
+    mock_verify.assert_called_once_with(old_password, "hashed_old")
+    mock_hash.assert_called_once_with(new_password)
+    mock_user_repository.update_password.assert_called_once_with(user_id, "hashed_new")

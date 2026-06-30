@@ -28,7 +28,7 @@ Under active development
 - Click statistics per link
 - Protected endpoints with token validation
 - Async database operations
-- Comprehensive test coverage (40+ tests)
+- Comprehensive test coverage (80+ tests)
 - Redis caching
 - User link management (list, update, delete)
 - User profile management
