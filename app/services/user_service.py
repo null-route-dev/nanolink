@@ -63,3 +63,14 @@ class UserService:
             created_at=user.created_at.isoformat() if user.created_at else None,
             updated_at=user.updated_at.isoformat() if user.updated_at else None
         )
+    
+    async def change_password(self, user_id: int, old_password: str, new_password: str) -> None:
+        user = await self.repo.get_user_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not self._verify_password(old_password, user.password_hash):
+            raise HTTPException(status_code=401, detail="Invalid old password")
+        
+        new_hash = self._hash_password(new_password)
+        await self.repo.update_password(user_id, new_hash)

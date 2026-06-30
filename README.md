@@ -31,9 +31,9 @@ Under active development
 - Comprehensive test coverage (40+ tests)
 - Redis caching
 - User link management (list, update, delete)
+- User profile management
 
 ### Planned
-- User profile management
 - Custom short codes (user-defined aliases)
 - Advanced statistics (daily, devices, locations)
 - Link expiration dates
@@ -59,6 +59,7 @@ Under active development
 | PUT | `/links/{short_code}` | Update your link URL |
 | DELETE | `/links/{short_code}` | Delete your link |
 | GET | `/stats/{short_code}` | Get click statistics for your link |
+| POST | `/users/change-password` | Change user password |
 
 ## Authentication
 

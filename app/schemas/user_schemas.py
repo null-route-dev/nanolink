@@ -16,6 +16,10 @@ class UserResponse(BaseModel):
     created_at: str
     updated_at: str
 
+class ChangePassword(BaseModel):
+    old_password: str
+    new_password: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
