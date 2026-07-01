@@ -352,3 +352,67 @@ async def test_get_original_url_with_unicode_characters(
         result = await link_service.get_original_url(short_code)
 
     assert result == expected_url
+
+@pytest.mark.asyncio
+async def test_create_short_link_with_custom_alias_success(
+    link_service: LinkService,
+    mock_link_repository: AsyncMock
+) -> None:
+    original_url = "https://example.com"
+    custom_alias = "mycustom"
+    link_data = LinkCreate(original_url=original_url, custom_alias=custom_alias)
+    user_id = 1
+
+    mock_link_repository.get_link_by_short_code.return_value = None
+
+    created_link = Link(
+        short_code=custom_alias,
+        original_url=original_url,
+        created_at=MagicMock(),
+        user_id=user_id
+    )
+    created_link.created_at.isoformat.return_value = "2026-01-01T12:00:00"
+
+    mock_link_repository.create_link.return_value = created_link
+
+    result = await link_service.create_short_link(link_data, user_id)
+
+    mock_link_repository.get_link_by_short_code.assert_called_once_with(custom_alias)
+    mock_link_repository.create_link.assert_called_once()
+    assert result.short_code == custom_alias
+
+@pytest.mark.asyncio
+async def test_create_short_link_with_custom_alias_already_taken(
+    link_service: LinkService,
+    mock_link_repository: AsyncMock
+) -> None:
+    original_url = "https://example.com"
+    custom_alias = "taken"
+    link_data = LinkCreate(original_url=original_url, custom_alias=custom_alias)
+    user_id = 1
+
+    existing_link = Link(short_code=custom_alias, original_url="https://other.com")
+    mock_link_repository.get_link_by_short_code.return_value = existing_link
+
+    with pytest.raises(HTTPException) as exc_info:
+        await link_service.create_short_link(link_data, user_id)
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.detail == "Alias already taken"
+    mock_link_repository.get_link_by_short_code.assert_called_once_with(custom_alias)
+    mock_link_repository.create_link.assert_not_called()
+
+@pytest.mark.asyncio
+async def test_create_short_link_with_custom_alias_invalid_characters(
+    link_service: LinkService,
+    mock_link_repository: AsyncMock
+) -> None:
+    original_url = "https://example.com"
+    custom_alias = "invalid!"
+    link_data = LinkCreate(original_url=original_url, custom_alias=custom_alias)
+    user_id = 1
+
+    with pytest.raises(HTTPException) as exc_info:
+        await link_service.create_short_link(link_data, user_id)
+
+    assert exc_info.value.status_code == 400

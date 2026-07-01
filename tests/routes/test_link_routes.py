@@ -209,3 +209,49 @@ def test_delete_link_service_error(client, mock_link_service):
 
     with pytest.raises(Exception, match="Service error"):
         client.delete(f"/links/{short_code}")
+
+def test_create_link_with_custom_alias_success(client, mock_link_service):
+    link_data = {
+        "original_url": "https://example.com",
+        "custom_alias": "mycustom"
+    }
+    expected_response = {
+        "short_code": "mycustom",
+        "original_url": "https://example.com/",
+        "created_at": "2026-01-01T12:00:00",
+        "owner_id": 1
+    }
+    mock_link_service.create_short_link.return_value = LinkResponse(**expected_response)
+
+    response = client.post("/links/", json=link_data)
+
+    assert response.status_code == 201
+    assert response.json() == expected_response
+
+def test_create_link_with_custom_alias_already_taken(client, mock_link_service):
+    link_data = {
+        "original_url": "https://example.com",
+        "custom_alias": "taken"
+    }
+    mock_link_service.create_short_link.side_effect = HTTPException(
+        status_code=400, detail="Alias already taken"
+    )
+
+    response = client.post("/links/", json=link_data)
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Alias already taken"
+
+def test_create_link_with_custom_alias_invalid_characters(client, mock_link_service):
+    link_data = {
+        "original_url": "https://example.com",
+        "custom_alias": "invalid!"
+    }
+    mock_link_service.create_short_link.side_effect = HTTPException(
+        status_code=400, detail="Alias must contain only letters, numbers, underscores and hyphens"
+    )
+
+    response = client.post("/links/", json=link_data)
+
+    assert response.status_code == 400
+    assert "Alias must contain only letters" in response.json()["detail"]
