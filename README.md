@@ -32,9 +32,9 @@ Under active development
 - Redis caching
 - User link management (list, update, delete)
 - User profile management
+- Custom short codes (user-defined aliases)
 
 ### Planned
-- Custom short codes (user-defined aliases)
 - Advanced statistics (daily, devices, locations)
 - Link expiration dates
 - Docker containerization

@@ -2,6 +2,7 @@ from pydantic import BaseModel, HttpUrl
 
 class LinkCreate(BaseModel):
     original_url: HttpUrl
+    custom_alias: str | None = None
 
 class LinkUpdate(BaseModel):
     original_url: HttpUrl

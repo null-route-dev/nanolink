@@ -18,12 +18,18 @@ class LinkService:
         self.repo = repo
 
     async def create_short_link(self, link_data: LinkCreate, user_id: int | None) -> LinkResponse:
-        while True:
-            short_code = ''.join(
-                random.choices(string.ascii_uppercase + string.digits, k=6))
+        if link_data.custom_alias:
+            short_code = link_data.custom_alias
             existing = await self.repo.get_link_by_short_code(short_code)
-            if not existing:
-                break
+            if existing:
+                raise HTTPException(status_code=400, detail="Alias already taken")
+        else:
+            while True:
+                short_code = ''.join(
+                    random.choices(string.ascii_uppercase + string.digits, k=6))
+                existing = await self.repo.get_link_by_short_code(short_code)
+                if not existing:
+                    break
 
         new_link = await self.repo.create_link(
             Link(
